@@ -11,17 +11,13 @@ import javax.transaction.UserTransaction;
  */
 public class AtomikosJtaPlatform {
 
-	private static final long serialVersionUID = 1L;
-
 	static TransactionManager transactionManager;
 	static UserTransaction transaction;
 
-	
 	protected TransactionManager locateTransactionManager() {
 		return transactionManager;
 	}
 
-	
 	protected UserTransaction locateUserTransaction() {
 		return transaction;
 	}
