@@ -1,17 +1,17 @@
 package com.example.demo;
 
-import java.io.InputStream;
 import java.util.Arrays;
 
 import javax.jms.ConnectionFactory;
+import javax.jms.MessageListener;
 import javax.sql.DataSource;
 import javax.transaction.TransactionManager;
 import javax.transaction.UserTransaction;
 
+import org.apache.activemq.ActiveMQConnectionFactory;
 import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -23,25 +23,29 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.config.JmsListenerContainerFactory;
-import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.listener.DefaultMessageListenerContainer;
+import org.springframework.jms.listener.MessageListenerContainer;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 import com.atomikos.icatch.jta.UserTransactionImp;
 import com.atomikos.icatch.jta.UserTransactionManager;
-import com.example.demo.dao.CountryDAO;
-import com.example.demo.model.Country;
 import com.example.demo.service.BusinessService;
+import com.example.demo.service.BusinessServiceImpl;
 
 @SpringBootApplication
 @EnableJms
+@EnableAsync
 public class DemoApplication implements CommandLineRunner {
 
 	private final static Logger logger = LoggerFactory.getLogger(DemoApplication.class);
 
-	@Autowired
-	BusinessService businessService;
-	
+	@Bean
+	public BusinessService businessService() {
+		return new BusinessServiceImpl();
+	}
+
 	/**
 	 * Démarrage de l'application
 	 * 
@@ -61,18 +65,40 @@ public class DemoApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 
-		
+		if (businessService() != null) {
+			logger.info(businessService().toString());
 
-		if (businessService != null) {
-			logger.info(businessService.toString());
-			
-			businessService.doLogic(args);
+			businessService().doLogic(args);
 		} else {
 			logger.warn("on ne veut pas en être là");
 		}
-		
-		
+
+		Thread.sleep(1000 * 10);
+
 		System.exit(-1);
+	}
+
+	@Bean
+	public MessageListener MyExampleListener() {
+		return new ExampleListener();
+	}
+
+	@Bean
+	public ConnectionFactory connectionFactory() {
+		ActiveMQConnectionFactory activeMQConnectionFactory = new ActiveMQConnectionFactory();
+		activeMQConnectionFactory.setBrokerURL("vm://embedded?broker.persistent=false,useShutdownHook=false");
+		return activeMQConnectionFactory;
+	}
+
+	@Bean
+	public MessageListenerContainer messageListenerContainer() {
+		DefaultMessageListenerContainer container = new DefaultMessageListenerContainer();
+		container.setConnectionFactory(connectionFactory());
+		container.setDestinationName(Consts.QUEUE_NAME); // Set the queue name here.
+		container.setMessageListener(MyExampleListener()); // Your JMS receiver message listener.
+		container.setConcurrency("10-100");
+		container.setMaxMessagesPerTask(1);
+		return container;
 	}
 
 	/**
@@ -94,24 +120,6 @@ public class DemoApplication implements CommandLineRunner {
 
 		return xaDataSource;
 	}
-
-	/**
-	 * Datasource XA 2 sous gestion Atomikos.
-	 * 
-	 * @return
-	 */
-	/*
-	 * @Bean(name = "_h2DataSource_2", initMethod = "init", destroyMethod = "close")
-	 * public DataSource h2DataSource2() { JdbcDataSource h2XaDataSource = new
-	 * JdbcDataSource(); h2XaDataSource.setURL(
-	 * "jdbc:h2:file:/Users/avebertrand/git/demo/target/data/demo_2");
-	 * 
-	 * AtomikosDataSourceBean xaDataSource = new AtomikosDataSourceBean();
-	 * xaDataSource.setXaDataSource(h2XaDataSource);
-	 * xaDataSource.setUniqueResourceName("xads2"); xaDataSource.setPoolSize(10);
-	 * 
-	 * return xaDataSource; }
-	 */
 
 	@Bean(name = "_userTransaction")
 	public UserTransaction userTransaction() throws Throwable {
@@ -149,8 +157,7 @@ public class DemoApplication implements CommandLineRunner {
 		// converter
 		configurer.configure(factory, connectionFactory);
 		// You could still override some of Boot's default if necessary.
-		
-		
+
 		return factory;
 	}
 
