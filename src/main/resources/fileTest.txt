@@ -1,0 +1,4 @@
+contenu à lire au démarrage de notre appli
+
+
+fin
