@@ -7,12 +7,10 @@ import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import com.example.demo.DemoApplication;
 import com.example.demo.model.Country;
 import com.example.demo.model.CountryMapper;
 
@@ -20,8 +18,8 @@ import com.example.demo.model.CountryMapper;
 public class CountryDaoImpl implements CountryDAO {
 
 	private final static Logger logger = LoggerFactory.getLogger(CountryDaoImpl.class);
-	
-	//@Autowired
+
+	// @Autowired
 	JdbcTemplate jdbcTemplate;
 
 	private final String SQL_FIND_PERSON = "select * from countries where id = ?";
@@ -34,7 +32,7 @@ public class CountryDaoImpl implements CountryDAO {
 	public CountryDaoImpl(@Lazy DataSource h2DataSource_1) {
 		jdbcTemplate = new JdbcTemplate(h2DataSource_1);
 	}
-	
+
 	@Override
 	public Country getCountryById(Long id) {
 		logger.info("getCountryById {}", id);

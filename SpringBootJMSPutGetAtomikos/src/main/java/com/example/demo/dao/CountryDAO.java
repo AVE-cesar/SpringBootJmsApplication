@@ -7,7 +7,7 @@ import com.example.demo.model.Country;
 public interface CountryDAO {
 
 	Country getCountryById(Long id);
-	
+
 	List<Country> getAllCountries();
 
 	boolean deleteCountry(Country country);
@@ -15,5 +15,5 @@ public interface CountryDAO {
 	boolean updateCountry(Country country);
 
 	boolean createCountry(Country country);
-	
+
 }
